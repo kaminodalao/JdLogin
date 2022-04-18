@@ -1,0 +1,5 @@
+*.zip
+*.deb
+__pycache__
+migrations
+novnc.conf

@@ -1,0 +1,3 @@
+#!/bin/bash
+xrdb $HOME/.Xresources
+/usr/bin/python3 /root/app/jdlogin.py >> /tmp/jdlogin.log
