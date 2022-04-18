@@ -3,8 +3,9 @@
     <p>{{ status }}</p>
     <p>{{ running }}</p>
     <div>
-      <iframe class="vncbox"
-        :src="`/vnc/vnc_lite.html?scaleViewport=1&path=websockify/?token=${this.task}&password=${this.task}`"
+      <iframe
+        class="vncbox"
+        :src="`/vnc/?scale=1&path=websockify/?token=${this.task}&password=${this.task}`"
         frameborder="0"
       ></iframe>
     </div>
@@ -39,8 +40,8 @@ export default {
 </script>
 
 <style>
-.vncbox{
-    width: 100%;
-    height: 660px;
+.vncbox {
+  width: 100%;
+  height: 660px;
 }
 </style>
