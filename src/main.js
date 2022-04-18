@@ -4,5 +4,4 @@ import router from './router'
 import Vant from 'vant';
 import 'vant/lib/index.css';
 
-const app = createApp(App).use(router).use(router).mount('#app')
-app.use(Vant);
+createApp(App).use(router).use(Vant).mount('#app')
