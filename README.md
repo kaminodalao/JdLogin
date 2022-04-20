@@ -30,6 +30,7 @@ docker build -t jdlogin:debug .
 ```
 git clone https://github.com/kaminodalao/JdLogin.git -b main jdlogin_api
 cd jdlogin_api
+cp config.example.json config.json
 pip install -r requirements.txt
 flask db init
 flask db migrate
