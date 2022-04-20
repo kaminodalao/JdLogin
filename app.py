@@ -73,7 +73,7 @@ class Report(db.Model):
 
 @app.route('/api/report', methods=['POST'])
 def report():
-    print(request.json)
+    #print(request.json)
     data = request.json['data']
     taskid = request.json['taskid']
 
@@ -166,7 +166,7 @@ def create():
         runtime=0,
         create_time=datetime.now(),
         client_ua=request.headers.get('User-Agent'),
-        client_ip=request.remote_addr,
+        client_ip=request.headers.get('X-Forwarded-For'),
         running=1
     )
 
