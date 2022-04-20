@@ -1,4 +1,3 @@
-from email.policy import default
 from flask import Flask, request
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
@@ -9,10 +8,23 @@ import uuid
 import json
 import docker
 import subprocess
+import json
+
+configs = {}
+
+with open("config.json", "r", encoding="utf8") as f:
+    configs = json.loads(f.read())
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://jdlogin:Qtwihd(V8YeT(7v5@127.0.0.1:3306/jdlogin'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://%s:%s@%s:%s/%s' % (
+    configs['database']['username'],
+    configs['database']['password'],
+    configs['database']['host'],
+    configs['database']['port'],
+    configs['database']['dbname']
+)
+
 db = SQLAlchemy(app)
 Migrate(app, db)
 CORS(app)
@@ -141,7 +153,7 @@ def create():
 
     container = docker_client.containers.run("jdlogin:debug", None, environment=[
         'TASKID=%s' % taskid,
-        'REPORTURL=http://172.17.0.1:5000/api/report'
+        'REPORTURL=%s/api/report' % configs['server']
     ], detach=True, remove=True)
 
     inspect = docker_api.inspect_container(container.id)
@@ -169,4 +181,4 @@ def create():
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', debug=True)
+    app.run(host='0.0.0.0', debug=False)

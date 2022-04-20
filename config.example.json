@@ -1,0 +1,10 @@
+{
+    "database": { //mysql数据库
+        "host": "127.0.0.1",
+        "port": 3306,
+        "username": "root",
+        "password": "password",
+        "dbname": "database"
+    },
+    "server":"http://172.17.0.1:5000" //docker主机ip+flask程序端口
+}

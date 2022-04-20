@@ -1,4 +1,7 @@
 flask
-flask-migrate
-flask-sqlalchemy
+flask_migrate
+flask_sqlalchemy
+flask_cors
 docker
+pymysql
+websockify
