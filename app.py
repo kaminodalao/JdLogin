@@ -1,3 +1,4 @@
+from urllib import response
 from flask import Flask, request
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
@@ -9,6 +10,9 @@ import json
 import docker
 import subprocess
 import json
+import requests
+import json
+import time
 
 configs = {}
 
@@ -29,10 +33,89 @@ db = SQLAlchemy(app)
 Migrate(app, db)
 CORS(app)
 
+QL_TOKEN = None
+
 docker_client = docker.from_env()
 docker_api = docker.APIClient()
 
 websockify = None
+
+
+def get_qinglong_token():
+    global QL_TOKEN
+    if QL_TOKEN is None or QL_TOKEN['expiration'] <= int(time.time()):
+        response = requests.get(
+            "%s/open/auth/token?client_id=%s&client_secret=%s" % (configs['qinglong']['url'], configs['qinglong']['client_id'], configs['qinglong']['client_secret']))
+        data = json.loads(response.content.decode('utf8'))
+        QL_TOKEN = data['data']
+
+    return QL_TOKEN['token']
+
+
+def update_jd_env(pt_pin, pt_key):
+    response = requests.get(configs['qinglong']['url'] + "/open/envs/", headers={
+        'Authorization': 'Bearer '+get_qinglong_token()
+    })
+
+    data = json.loads(response.content.decode('utf8'))['data']
+
+    jd_cookie = None
+
+    for env in data:
+        if env['name'] == 'JD_COOKIE':
+            jd_cookie = env
+            break
+
+    if jd_cookie is None:
+        return False
+
+    # 获取现有cookie
+    cookies = []
+    for cookie in jd_cookie['value'].split("&"):
+        cookie_dict = {}
+        for c in cookie.split(";"):
+            if c != "":
+                n = c.split("=")
+                cookie_dict[n[0]] = n[1]
+
+        cookies.append(cookie_dict)
+
+    # 更新cookie
+    new = True
+    new_cookies = []
+    for cookie in cookies:
+        if cookie['pt_pin'] == pt_pin:
+            cookie['pt_key'] = pt_key
+            new = False
+        new_cookies.append(cookie)
+
+    if new:
+        new_cookies.append({'pt_key': pt_key, 'pt_pin': pt_pin})
+
+    new_cookie_lines = []
+    for nc in new_cookies:
+        l = ["%s=%s;" % (k, v) for k, v in nc.items()]
+        new_cookie_lines.append("".join(l))
+
+    new_cookie_text = "&".join(new_cookie_lines)
+
+    playload = {
+        "value": new_cookie_text,
+        "name": "JD_COOKIE",
+        "remarks": "",
+        "id": jd_cookie['id']
+    }
+
+    response = requests.put(configs['qinglong']['url'] + "/open/envs/", json=playload, headers={
+        'Authorization': 'Bearer '+get_qinglong_token()
+    })
+
+    if response.json()['code'] == 200:
+        return True
+    else:
+        print("更新失败 "+response.content.decode('utf8'))
+
+        return False
 
 
 def restart_websockify():
@@ -62,6 +145,7 @@ class Task(db.Model):
     client_ua = db.Column(db.String(255), nullable=True)
     running = db.Column(db.Integer, default=0)
     sendkey = db.Column(db.String(255), nullable=True)
+    deploy = db.Column(db.Integer, default=0)
 
 
 class Report(db.Model):
@@ -73,7 +157,7 @@ class Report(db.Model):
 
 @app.route('/api/report', methods=['POST'])
 def report():
-    #print(request.json)
+    # print(request.json)
     data = request.json['data']
     taskid = request.json['taskid']
 
@@ -112,6 +196,38 @@ def report():
     return {"sendkeys": sendkey}
 
 
+@app.route('/api/deploy', methods=['POST'])
+def deploy():
+    taskid = request.json['task']
+    task = Task.query.filter_by(uuid=taskid).filter_by(
+        status='LOGIN_FINISHED').first()
+    if task is None:
+        return {'message': 'not found task'}, 404
+
+    if task.cookie is None or len(task.cookie) == 0:
+        return {'message': 'login not success'}, 400
+
+    pt_key = None
+    pt_pin = None
+    for cookie in json.loads(task.cookie):
+        if cookie['name'] == 'pt_pin':
+            pt_pin = cookie['value']
+        if cookie['name'] == 'pt_key':
+            pt_key = cookie['value']
+
+    if not (pt_pin and pt_key):
+        return {'message': 'decode cookie error'}, 400
+
+    if update_jd_env(pt_pin, pt_key):
+        task.deploy = 1
+        db.session.commit()
+
+        return {'message': "deploy success"}
+
+    else:
+        return {'message': 'deploy fail'}
+
+
 @app.route('/api/sendkeys', methods=['POST'])
 def sendkey():
     taskid = request.json['task']
@@ -142,6 +258,7 @@ def status():
         'status': task.status,
         'cookie': None,
         'running': task.running,
+        'deploy':task.deploy
     }
 
     return data

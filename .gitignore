@@ -4,3 +4,4 @@ __pycache__
 migrations
 novnc.conf
 config.json
+test.py

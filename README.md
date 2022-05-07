@@ -7,9 +7,12 @@
 ## 优点
 完全没有
 
+## 测试
+[https://jdl.imea.me](https://jdl.imea.me)  
+
 ## 功能
 - 使用网页vnc登录jd获取cookie
-- cookie部署到qinglong环境变量(暂无)
+- cookie部署到qinglong环境变量
 
 ## 部署
 ### 前端页面

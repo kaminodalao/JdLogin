@@ -6,5 +6,10 @@
         "password": "password",
         "dbname": "database"
     },
-    "server":"http://172.17.0.1:5000" //docker主机ip+flask程序端口
+    "server":"http://172.17.0.1:5000", //docker主机ip+flask程序端口
+    "qinglong":{
+        "url":"http://127.0.0.1:5700", 
+        "client_id":"",
+        "client_key":""
+    }
 }
